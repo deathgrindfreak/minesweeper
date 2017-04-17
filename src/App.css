@@ -3,18 +3,13 @@
   background-color: #777;
 }
 
-.mine-row {
-}
-
-#mine-cell {
+.mine-cell {
   background-color: #ddd;
   width: 24px;
   height: 24px;
 }
 
 #mine-button {
-  width: 20px;
-  height: 20px;
   background-color:#ccc;
   border-top:4px solid #eee;
   border-right:4px solid #aaa;

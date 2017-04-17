@@ -8,22 +8,48 @@ class App extends Component {
 }
 
 class Grid extends Component {
-  constructor() {
-    super();
+  constructor(props) {
+    super(props);
     this.state = {
-      grid: this.generateGrid()
+      bombs: this.generateBombs()
     };
   }
   
-  static generateGrid() {}
+  // Generate a number of bombs randomly between 
+  generateBombs() {
+    const median = Math.max(this.props.width, this.props.height);
+    const offset = Math.floor(median / 4);
+    let numberOfBombs = getRandomInt(median - offset, median + offset);
+    
+    console.log(numberOfBombs);
+    
+    let bombs = {};
+    while (numberOfBombs > 0) {
+      let x = getRandomInt(0, this.props.width);
+      if (!bombs[x]) {
+        let y = getRandomInt(0, this.props.height);
+        if (!bombs[y]) {
+          bombs[x] = y;
+          numberOfBombs--;
+        }
+      }
+    }
+    
+    console.log(bombs);
+    return bombs;
+    
+    function getRandomInt(min, max) {
+      return Math.floor(Math.random() * (max - min + 1)) + min;
+    }
+  }
   
   render() {
     // Create the table body
     let cells = [], rows = [];
-    for (let i = 0; i < this.props.width; i++) {
-      for (let j = 0; j < this.props.height; j++)
+    for (let i = 0; i < this.props.height; i++) {
+      for (let j = 0; j < this.props.width; j++)
         cells.push(<Cell />);
-      rows.push(<tr className="mine-row">{cells}</tr>);
+      rows.push(<tr>{cells}</tr>);
       cells = [];
     }
     
@@ -46,12 +72,15 @@ class Cell extends Component {
   }
   
   cellClicked() {
-    this.setState({id: "mine-cell"});
+    this.setState({id: null});
   }
   
   render() {
     return (
-      <td id={this.state.id} onClick={() => this.cellClicked()}></td>
+      <td id={this.state.id} 
+          className='mine-cell' 
+          onClick={() => this.cellClicked()}>
+      </td>
     );
   }
 }
