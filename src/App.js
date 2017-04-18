@@ -3,7 +3,7 @@ import './App.css';
 
 class App extends Component {
   render() {
-      return <Grid height="5" width="5"/>;
+      return <Grid height={10} width={10}/>;
   }
 }
 
@@ -11,62 +11,72 @@ class Grid extends Component {
   constructor(props) {
     super(props);
     this.state = {
-      bombs: this.generateBombs()
+      boardState: this.createBoard()
     };
   }
 
-  // Generate a number of bombs randomly between
+  createBoard() {
+    const bombs = this.generateBombs();
+    let board = Array(this.props.height).fill(Array(this.props.width).fill(null));
+    
+    return board.map(function(row, y) {
+      return row.map(function(cell, x) {
+        let isBomb = bombs.checkBomb(x, y);
+        return {
+          'x': x,
+          'y': y,
+          'bomb': isBomb,
+          'displayChar': isBomb ? 'b' : ''
+        };
+      });
+    });
+  }
+  
   generateBombs() {
-    const median = Math.floor(this.props.width * this.props.height / 2);
-    const offset = Math.floor(median / 8);
-    let numberOfBombs = getRandomInt(median - offset, median + offset);
+    const median = Math.max(this.props.width, this.props.height);
+    const offset = Math.floor(median / 4);
+    let numberOfBombs = getRandomInt(median + offset, median + 2 * offset);
 
-    console.log(median, offset, numberOfBombs);
+    // Array holding a number for each cell
+    let pos = []
+    for (let p = 0; p < this.props.height * this.props.height; p++)
+      pos.push(p);
 
-    let xs = [], ys = [];
-    for (let i = 0; i < this.props.width; i++) { xs.push(i); }
-    for (let j = 0; j < this.props.height; j++) { ys.push(j); }
-
+    // Create map of arrays for bombs
     let bombs = {};
     while (numberOfBombs-- > 0) {
-      let x = getRandomInt(0, xs.length - 1);
-      let y = getRandomInt(0, ys.length - 1);
-      bombs[xs[x]] = ys[y];
+      let p = getRandomInt(0, pos.length - 2);
+      let y = Math.floor(pos[p] / this.props.height);
+      let x = pos[p] - this.props.height * y;
+      if (!(x in bombs))
+        bombs[x] = {};
+      bombs[x][y] = true;
 
       // Remove elements
-      xs.splice(x, 1);
-      ys.splice(y, 1);
+      pos.splice(p, 1);
     }
 
-    console.log(bombs);
-
-    return bombs;
-
-    function getRandomInt(min, max) {
-      return Math.floor(Math.random() * (max - min + 1)) + min;
-    }
+    return {
+      bombs: bombs,
+      checkBomb: function(x, y) {
+        return x in bombs && y in this.bombs[x];
+      }
+    };
   }
 
-
-  handleClick(position) {
-    console.log(position);
+  handleClick(cell) {
+    console.log(cell);
   }
 
   render() {
     // Create the table body
-    let cells = [], rows = [];
-    for (let i = 0; i < this.props.height; i++) {
-      for (let j = 0; j < this.props.width; j++) {
-        let isBomb = this.state.bombs[j] !== undefined && this.state.bombs[j] === i;
-        cells.push(
-            <Cell cellState={{x: j, y: i, bomb: isBomb}}
-                  onClick={this.handleClick}/>
-        );
-      }
-      rows.push(<tr>{cells}</tr>);
-      cells = [];
-    }
-
+    let rows = this.state.boardState.map(function(row) {
+      let cells = row.map(function(cell) {
+        return <Cell cellState={cell} onClick={this.handleClick}/>;
+      }.bind(this));
+      return <tr>{cells}</tr>;
+    }.bind(this));
+    
     return (
       <table className="mine-table">
         <tbody>
@@ -81,23 +91,29 @@ class Cell extends Component {
   constructor() {
     super();
     this.state = {
-      id: "mine-button"
+      clicked: false
     };
   }
 
   cellClicked() {
-    this.setState({id: "mine-cell"});
+    this.setState({clicked: true});
     this.props.onClick(this.props.cellState);
   }
 
   render() {
     return (
-      <td id={this.state.id}
+      <td className="mine-cell"
+          id={this.state.clicked ? "mine-clicked" : "mine-button"}
           onClick={() => this.cellClicked()}>
-        {this.props.cellState.bomb ? 'b' : ''}
+        {this.props.cellState.displayChar}
       </td>
     );
   }
+}
+
+// Generate a random number from min to max
+function getRandomInt(min, max) {
+  return Math.floor(Math.random() * (max - min + 1)) + min;
 }
 
 export default App;
