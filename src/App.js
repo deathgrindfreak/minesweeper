@@ -10,26 +10,56 @@ class App extends Component {
 class Grid extends Component {
   constructor(props) {
     super(props);
+    const bombs = this.generateBombs();
+    let boardState = this.createBoard(bombs);
+    
     this.state = {
-      boardState: this.createBoard()
+      bombs: bombs,
+      boardState: boardState
     };
   }
 
-  createBoard() {
-    const bombs = this.generateBombs();
+  createBoard(bombs) {
+    // Empty board
     let board = Array(this.props.height).fill(Array(this.props.width).fill(null));
     
-    return board.map(function(row, y) {
+    // Create the board with bomb locations
+    board = board.map(function(row, y) {
       return row.map(function(cell, x) {
-        let isBomb = bombs.checkBomb(x, y);
-        return {
-          'x': x,
+        return { 
+          'x': x, 
           'y': y,
-          'bomb': isBomb,
-          'displayChar': isBomb ? 'b' : ''
+          'bomb': bombs.checkBomb(x, y)
         };
       });
     });
+    
+    // Fill in the numbers displaying the number of adjacent bombs
+    return board.map(function(row, y) {
+      return row.map(function(cell, x) {
+        cell.displayChar = this.getDisplayChar(bombs, x, y);
+        return cell;
+      }.bind(this));
+    }.bind(this));
+  }
+  
+  getDisplayChar(bombs, x, y) {
+    if (bombs.checkBomb(x, y)) {
+      return 'b';
+    } else {
+      let numberOfBombs = [-1, 0, 1].reduce(function(numBombs, yo) {
+        return numBombs + [-1, 0, 1].reduce(function(rowBombs, xo) {
+          let xs = x + xo, ys = y + yo;
+          if (xs !== x || ys !== y)
+            return rowBombs + bombs.checkBomb(xs, ys) ? 1 : 0;
+          return rowBombs;
+        }, 0);
+      }, 0);
+      
+      console.log(x, y, "numberOfBombs", numberOfBombs);
+      
+      return numberOfBombs === 0 ? '' : numberOfBombs + "";
+    }
   }
   
   generateBombs() {
@@ -59,7 +89,7 @@ class Grid extends Component {
     return {
       bombs: bombs,
       checkBomb: function(x, y) {
-        return x in bombs && y in this.bombs[x];
+        return x in this.bombs && y in this.bombs[x];
       }
     };
   }
@@ -99,13 +129,35 @@ class Cell extends Component {
     this.setState({clicked: true});
     this.props.onClick(this.props.cellState);
   }
+  
+  getDisplayStyle(char) {
+    if (char === '1')
+      return 'one';
+    else if (char === '2')
+      return 'two';
+    else if (char === '3')
+      return 'three';
+    else if (char === '4')
+      return 'four';
+    else if (char === '5')
+      return 'five';
+    else if (char === '6')
+      return 'six';
+    else if (char === '7')
+      return 'seven';
+    else if (char === '8')
+      return 'eight';
+  }
 
   render() {
+    let displayChar = this.props.cellState.displayChar;
     return (
       <td className="mine-cell"
           id={this.state.clicked ? "mine-clicked" : "mine-button"}
           onClick={() => this.cellClicked()}>
-        {this.props.cellState.displayChar}
+        <span id={this.getDisplayStyle(displayChar)}>
+          {displayChar}
+        </span>
       </td>
     );
   }

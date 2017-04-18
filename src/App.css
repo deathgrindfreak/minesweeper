@@ -7,7 +7,7 @@
 .mine-cell {
     text-align: center;
     font-weight: bold;
-    font-size: 1.1em;
+    font-size: 1.2em;
 }
 
 #mine-clicked {
@@ -24,4 +24,36 @@
     border-right: 4px solid #aaa;
     border-bottom: 4px solid #aaa;
     border-left: 4px solid #eee;
+}
+
+#one {
+    color: blue;
+}
+
+#two {
+    color: green;
+}
+
+#three {
+    color: red;
+}
+
+#four {
+    color: darkblue;
+}
+
+#five {
+    color: darkred;
+}
+
+#six {
+    color: darkturquoise;
+}
+
+#seven {
+    color: black;
+}
+
+#eight {
+    color: gray;
 }
