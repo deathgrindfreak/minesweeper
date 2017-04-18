@@ -10,12 +10,13 @@ class App extends Component {
 class Grid extends Component {
   constructor(props) {
     super(props);
+    
     const bombs = this.generateBombs();
     let boardState = this.createBoard(bombs);
-    
     this.state = {
       bombs: bombs,
-      boardState: boardState
+      boardState: boardState,
+      gameOver: false
     };
   }
 
@@ -29,7 +30,9 @@ class Grid extends Component {
         return { 
           'x': x, 
           'y': y,
-          'bomb': bombs.checkBomb(x, y)
+          'bomb': bombs.checkBomb(x, y),
+          'clicked': false,
+          'clickedBomb': false
         };
       });
     });
@@ -55,9 +58,6 @@ class Grid extends Component {
           return rowBombs;
         }, 0);
       }, 0);
-      
-      console.log(x, y, "numberOfBombs", numberOfBombs);
-      
       return numberOfBombs === 0 ? '' : numberOfBombs + "";
     }
   }
@@ -72,7 +72,7 @@ class Grid extends Component {
     for (let p = 0; p < this.props.height * this.props.height; p++)
       pos.push(p);
 
-    // Create map of arrays for bombs
+    // Create map of maps for bombs
     let bombs = {};
     while (numberOfBombs-- > 0) {
       let p = getRandomInt(0, pos.length - 2);
@@ -82,7 +82,7 @@ class Grid extends Component {
         bombs[x] = {};
       bombs[x][y] = true;
 
-      // Remove elements
+      // Remove selected element
       pos.splice(p, 1);
     }
 
@@ -95,14 +95,45 @@ class Grid extends Component {
   }
 
   handleClick(cell) {
+    if (this.state.gameOver) return;
+    
+    // Copy the board
+    let state = this.state.boardState.slice();
+    
+    if (cell.bomb) {
+      this.endGame(state, cell);
+      return;
+    }
+      
+    state[cell.y][cell.x].clicked = true;
+    this.setState(state);
+    
     console.log(cell);
+  }
+  
+  endGame(state, cell) {
+    // End the game
+    state.gameOver = true;
+    
+    // Show all bombs
+    state.map(function(r) {
+      return r.map(function(c) {
+        if (c.x == cell.x && c.y == cell.y)
+          c.clickedBomb = true;
+        if (c.bomb)
+          c.clicked = true;
+        return c;
+      });
+    });
+    
+    this.setState(state);
   }
 
   render() {
     // Create the table body
     let rows = this.state.boardState.map(function(row) {
       let cells = row.map(function(cell) {
-        return <Cell cellState={cell} onClick={this.handleClick}/>;
+        return <Cell cellState={cell} onClick={() => this.handleClick(cell)}/>;
       }.bind(this));
       return <tr>{cells}</tr>;
     }.bind(this));
@@ -118,18 +149,6 @@ class Grid extends Component {
 }
 
 class Cell extends Component {
-  constructor() {
-    super();
-    this.state = {
-      clicked: false
-    };
-  }
-
-  cellClicked() {
-    this.setState({clicked: true});
-    this.props.onClick(this.props.cellState);
-  }
-  
   getDisplayStyle(char) {
     if (char === '1')
       return 'one';
@@ -147,16 +166,25 @@ class Cell extends Component {
       return 'seven';
     else if (char === '8')
       return 'eight';
+    return null;
+  }
+  
+  getId(cell) {
+    if(cell.clickedBomb)
+      return "hit-cell"
+    else if (cell.clicked)
+      return "mine-clicked"
+    return "mine-button";
   }
 
   render() {
     let displayChar = this.props.cellState.displayChar;
     return (
       <td className="mine-cell"
-          id={this.state.clicked ? "mine-clicked" : "mine-button"}
-          onClick={() => this.cellClicked()}>
+          id={this.getId(this.props.cellState)}
+          onClick={() => this.props.onClick()}>
         <span id={this.getDisplayStyle(displayChar)}>
-          {displayChar}
+          {this.props.cellState.clicked ? displayChar : ''}
         </span>
       </td>
     );

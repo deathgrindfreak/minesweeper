@@ -26,6 +26,12 @@
     border-left: 4px solid #eee;
 }
 
+#hit-cell {
+    background-color: red;
+    width: 32px;
+    height: 32px;
+}
+
 #one {
     color: blue;
 }
