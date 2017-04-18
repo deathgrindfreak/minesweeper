@@ -1,18 +1,21 @@
 .mine-table {
-  border: none;
-  background-color: #777;
+    margin: 0 auto;
+    border: none;
+    background-color: #777;
 }
 
-.mine-cell {
-  background-color: #ddd;
-  width: 24px;
-  height: 24px;
+#mine-cell {
+    background-color: #ddd;
+    width: 32px;
+    height: 32px;
 }
 
 #mine-button {
-  background-color:#ccc;
-  border-top:4px solid #eee;
-  border-right:4px solid #aaa;
-  border-bottom:4px solid #aaa;
-  border-left:4px solid #eee;
+    width: 24px;
+    height: 24px;
+    background-color: #ccc;
+    border-top: 4px solid #eee;
+    border-right: 4px solid #aaa;
+    border-bottom: 4px solid #aaa;
+    border-left: 4px solid #eee;
 }
