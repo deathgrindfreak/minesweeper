@@ -11,11 +11,12 @@ class Grid extends Component {
   constructor(props) {
     super(props);
 
-    let boardState = this.createBoard();
-    this.createAdjacencyList(boardState);
+    let board = this.createBoard();
+    let adjacencyList = UnionFind(board);
     
     this.state = {
-      boardState: boardState,
+      boardState: board,
+      adjacencyList: adjacencyList,
       gameOver: false
     };
   }
@@ -30,19 +31,19 @@ class Grid extends Component {
     let board = Array(this.props.height * this.props.width).fill(null);
 
     // Create the board with bomb locations
-    board = board.map(function(cell, p) {
+    board = board.map((cell, p) => {
       return {
         'position': p,
         'bomb': checkBomb(p),
-        'clicked': true,
+        'clicked': false,
         'clickedBomb': false,
         'neighbors': getNeighbors(p),
         'isNeighbor': function(p) { return p in this.neighbors; }
       };
     });
-
+    
     // Fill in the numbers displaying the number of adjacent bombs
-    return board.map(function(cell) {
+    return board.map((cell) => {
       cell.displayChar = getDisplayChar(cell);
       cell.isOpen = cell.displayChar === '';
       cell.isNum = !cell.isOpen && !cell.bomb;
@@ -54,7 +55,7 @@ class Grid extends Component {
       if (checkBomb(cell.position)) {
         return 'b';
       } else {
-        let numberOfBombs = cell.neighbors.reduce(function(a, n) {
+        let numberOfBombs = cell.neighbors.reduce((a, n) => {
           return a + (checkBomb(n) ? 1 : 0);
         }, 0);
         return numberOfBombs === 0 ? '' : numberOfBombs + "";
@@ -66,9 +67,9 @@ class Grid extends Component {
       let y = Math.floor(p / self.props.width);
       let x = p - y * self.props.width;
       
-      return [-1, 0, 1].reduce(function(a, yo) {
+      return [-1, 0, 1].reduce((a, yo) => {
           return a.concat(
-            [-1, 0, 1].reduce(function(ra, xo) {
+            [-1, 0, 1].reduce((ra, xo) => {
               let xs = x + xo, ys = y + yo;
               if ((x !== xs || y !== ys) && checkBounds(xs, ys))
                 ra.push(xs + self.props.width * ys);
@@ -90,8 +91,7 @@ class Grid extends Component {
   
       // Array holding a number for each cell
       let pos = [];
-      for (let p = 0; p < self.props.height * self.props.width; p++)
-        pos.push(p);
+      for (let p = 0; p < self.props.height * self.props.width; p++) { pos.push(p); }
   
       // Create map of maps for bombs
       let bombs = {};
@@ -102,34 +102,8 @@ class Grid extends Component {
         // Remove selected element
         pos.splice(i, 1);
       }
-      return function(p) { return p in bombs; }
+      return (p) => p in bombs;
     }
-  }
-
-  createAdjacencyList(state) {
-    let self = this;
-
-    let adj = [], indLst = {}, maxInd = 0;
-    state.forEach(function(cell) {
-      if (cell.isOpen) {
-        // Add to the list if not in it
-        if (!(cell.position in indLst)) {
-          indLst[cell.position] = maxInd++;
-          adj.push([cell.position]);
-        }
-
-        // Add the neighbors
-        let ind = indLst[cell.position];
-        cell.neighbors.forEach(function(n) {
-          if (state[n].isOpen && !(n in indLst)) {
-            indLst[n] = ind;
-            adj[ind].push(n);
-          }
-        });
-      }
-    });
-
-    console.log(adj, indLst);
   }
 
   handleClick(cell) {
@@ -153,7 +127,7 @@ class Grid extends Component {
     state.gameOver = true;
 
     // Show all bombs
-    state.map(function(c) {
+    state.map((c) => {
       if (c.position === cell.position)
         c.clickedBomb = true;
       if (c.bomb)
@@ -167,22 +141,35 @@ class Grid extends Component {
   openCells(state, cell) {
     // Open the cell
     state[cell.position].clicked = true;
+    
+    // Get the adjacent open cells
+    let adj = this.state.adjacencyList.getConnected(cell.position);
+    
+    // Open all adjacent open cells as well as neighboring number cells
+    adj.forEach((p) => {
+      state[p].clicked = true;
+      state[p].neighbors.forEach((np) => {
+        if (state[np].isNum)
+          state[np].clicked = true;
+      });
+    });
+    
     return state;
   }
 
   render() {
     // Create the table body
-    let rows = Array(this.props.height).fill(null).map(function(r, y) {
-      let cells = Array(this.props.width).fill(null).map(function(c, x) {
+    let rows = Array(this.props.height).fill(null).map((r, y) => {
+      let cells = Array(this.props.width).fill(null).map((c, x) => {
         let cell = this.state.boardState[x + this.props.width * y];
         return (
           <Cell key={cell.position} 
                 cellState={cell} 
                 onClick={() => this.handleClick(cell)} />
         );
-      }.bind(this));
+      });
       return <tr key={y}>{cells}</tr>;
-    }.bind(this));
+    });
 
     return (
       <table className="mine-table">
@@ -235,6 +222,63 @@ class Cell extends Component {
       </td>
     );
   }
+}
+
+// Creates an adjacency list for open board members
+function UnionFind(board) {
+  // Represents set of blocks based on position
+  let id = [];
+  for (let i = 0; i < board.length; i++) { id.push(i); }
+  
+  // Build the adjacency list for the board
+  board.forEach((cell) => {
+    if (cell.isOpen) {
+      let cId = find(cell.position);
+      
+      // Find all ids for open neighbors
+      let nIds = findAll(cell.neighbors.filter((n) => board[n].isOpen));
+      
+      // Find neighbors not equal to cId and perform a union
+      nIds.filter((nId) => nId !== cId)
+        .map((nId) => union(cId, nId));
+    }
+  });
+  
+  // Find the id of p
+  function find(p) { return id[p]; }
+  
+  // Find all ids for ps
+  function findAll(ps) { return ps.map((p) => find(p)); }
+  
+  // Combine two sets
+  function union(p, q) {
+    let pId = find(p), qId = find(q);
+    
+    // Return if already joined
+    if (pId === qId) return;
+    
+    // Set all ids equal to qId to pId
+    id = id.reduce((a, i) => {
+      if (i === qId) a.push(pId);
+      else a.push(i);
+      return a;
+    }, []);
+  }
+  
+  function getConnected(p) {
+    let pId = id[p];
+    return id.reduce((a, cId, c) => {
+      if (cId === pId) a.push(c);
+      return a;
+    }, []);
+  }
+  
+  return {
+    find: find,
+    findAll: findAll,
+    union: union,
+    getConnected: getConnected
+  };
 }
 
 // Generate a random number from min to max
