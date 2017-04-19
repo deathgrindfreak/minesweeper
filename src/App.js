@@ -3,42 +3,61 @@ import './App.css';
 
 class App extends Component {
   render() {
-      return <Grid height={10} width={10}/>;
+      return <Grid height={10} width={20}/>;
   }
 }
 
 class Grid extends Component {
   constructor(props) {
     super(props);
-    
+
     const bombs = this.generateBombs();
     let boardState = this.createBoard(bombs);
-    let adjacencyList = this.createAdjacencyList(boardState);
+    this.createAdjacencyList(boardState);
     this.state = {
       bombs: bombs,
       boardState: boardState,
-      adjacencyList: adjacencyList,
       gameOver: false
     };
   }
 
   createBoard(bombs) {
+    let self = this;
+
     // Empty board
     let board = Array(this.props.height).fill(Array(this.props.width).fill(null));
-    
+
     // Create the board with bomb locations
     board = board.map(function(row, y) {
       return row.map(function(cell, x) {
-        return { 
-          'x': x, 
+        return {
+          'x': x,
           'y': y,
           'bomb': bombs.checkBomb(x, y),
-          'clicked': false,
-          'clickedBomb': false
+          'clicked': true,
+          'clickedBomb': false,
+          'neighbors': function() {
+            return [-1, 0, 1].reduce(function(a, yo) {
+              return a.concat(
+                [-1, 0, 1].reduce(function(ra, xo) {
+                  let xs = this.x + xo, ys = this.y + yo;
+                  if ((this.x !== xs || this.y !== ys) && self.checkBounds(xs, ys))
+                    ra.push(xs + self.props.width * ys);
+                  return ra;
+                }.bind(this), [])
+              );
+            }.bind(this), []);
+          },
+          'isNeighbor': function(x, y) {
+            return this.posNeighbor(this.x + self.props.width * this.y);
+          },
+          'posNeighbor': function(p) {
+            return p in this.neighbors();
+          }
         };
       });
     });
-    
+
     // Fill in the numbers displaying the number of adjacent bombs
     return board.map(function(row, y) {
       return row.map(function(cell, x) {
@@ -49,7 +68,7 @@ class Grid extends Component {
       }.bind(this));
     }.bind(this));
   }
-  
+
   getDisplayChar(bombs, x, y) {
     if (bombs.checkBomb(x, y)) {
       return 'b';
@@ -65,65 +84,27 @@ class Grid extends Component {
       return numberOfBombs === 0 ? '' : numberOfBombs + "";
     }
   }
-  
-  createAdjacencyList(state) {
-    let self = this;
-    
-    // Array holding a number for each cell
-    let pos = []
-    for (let p = 0; p < this.props.height * this.props.height; p++)
-      pos.push(p);
-    
-    // Create adjacency list
-    let adj = pos.reduce(function(a, p) {
-      let y = Math.floor(pos[p] / self.props.height);
-      let x = pos[p] - self.props.height * y;
-      let n = findOpenNeighbors(state[y][x]);
-      if (n.length > 0)
-        a[p] = n;
-      return a;
-    }, {});
-    
-    console.log(adj);
-    
-    return adj;
-    
-    // Returns an array of open neighbors
-    function findOpenNeighbors(cell) {
-      return [-1, 0, 1].reduce(function(a, yo) {
-        return a.concat(
-          [-1, 0, 1].reduce(function(ra, xo) {
-            let xs = cell.x + xo, ys = cell.y + yo;
-            if ((cell.x !== xs || cell.y !== ys) 
-                && self.checkBounds(xs, ys) && state[ys][xs].isOpen)
-              ra.push(xs + self.props.height * ys);
-            return ra;
-          }, [])
-        );
-      }, []);
-    }
-  }
-  
+
   checkBounds(x, y) {
     return x >= 0 && y >= 0 && x < this.props.width && y < this.props.height;
   }
-  
+
   generateBombs() {
     const median = Math.max(this.props.width, this.props.height);
     const offset = Math.floor(median / 4);
     let numberOfBombs = getRandomInt(median + offset, median + 2 * offset);
 
     // Array holding a number for each cell
-    let pos = []
-    for (let p = 0; p < this.props.height * this.props.height; p++)
+    let pos = [];
+    for (let p = 0; p < this.props.height * this.props.width; p++)
       pos.push(p);
 
     // Create map of maps for bombs
     let bombs = {};
     while (numberOfBombs-- > 0) {
       let p = getRandomInt(0, pos.length - 2);
-      let y = Math.floor(pos[p] / this.props.height);
-      let x = pos[p] - this.props.height * y;
+      let y = Math.floor(pos[p] / this.props.width);
+      let x = pos[p] - this.props.width * y;
       if (!(x in bombs))
         bombs[x] = {};
       bombs[x][y] = true;
@@ -140,12 +121,23 @@ class Grid extends Component {
     };
   }
 
+  createAdjacencyList(state) {
+    let adj = [];
+    state.forEach(function(row) {
+      row.forEach(function(cell) {
+        if (cell.isOpen) {
+          console.log(cell.neighbors());
+        }
+      });
+    });
+  }
+
   handleClick(cell) {
     if (this.state.gameOver) return;
-    
+
     // Copy the board
     let state = this.state.boardState.slice();
-    
+
     // Set the state
     if (cell.bomb)
       state = this.endGame(state, cell);
@@ -155,11 +147,11 @@ class Grid extends Component {
       state[cell.y][cell.x].clicked = true;
     this.setState(state);
   }
-  
+
   endGame(state, cell) {
     // End the game
     state.gameOver = true;
-    
+
     // Show all bombs
     state.map(function(r) {
       return r.map(function(c) {
@@ -170,22 +162,13 @@ class Grid extends Component {
         return c;
       });
     });
-    
+
     return state;
   }
-  
+
   openCells(state, cell) {
     // Open the cell
     state[cell.y][cell.x].clicked = true;
-    
-    let adj = this.state.adjacencyList[cell.x + this.props.height * cell.y];
-    adj.forEach(function(a) {
-    state[cell.y][cell.x].clicked = true;
-      let ys = Math.floor(a / this.props.height);
-      let xs = a - this.props.height * ys;
-      let c = state[ys][xs];
-      c.clicked = true;
-    }.bind(this))
     return state;
   }
 
@@ -197,7 +180,7 @@ class Grid extends Component {
       }.bind(this));
       return <tr>{cells}</tr>;
     }.bind(this));
-    
+
     return (
       <table className="mine-table">
         <tbody>
@@ -228,12 +211,12 @@ class Cell extends Component {
       return 'eight';
     return null;
   }
-  
+
   getId(cell) {
     if(cell.clickedBomb)
-      return "hit-cell"
+      return "hit-cell";
     else if (cell.clicked)
-      return "mine-clicked"
+      return "mine-clicked";
     return "mine-button";
   }
 
