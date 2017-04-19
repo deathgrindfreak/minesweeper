@@ -11,18 +11,20 @@ class Grid extends Component {
   constructor(props) {
     super(props);
 
-    const bombs = this.generateBombs();
-    let boardState = this.createBoard(bombs);
+    let boardState = this.createBoard();
     this.createAdjacencyList(boardState);
+    
     this.state = {
-      bombs: bombs,
       boardState: boardState,
       gameOver: false
     };
   }
 
-  createBoard(bombs) {
+  createBoard() {
     let self = this;
+    
+    // Generate the bombs
+    let checkBomb = generateBombs();
 
     // Empty board
     let board = Array(this.props.height * this.props.width).fill(null);
@@ -31,29 +33,11 @@ class Grid extends Component {
     board = board.map(function(cell, p) {
       return {
         'position': p,
-        'bomb': bombs.checkBomb(p),
+        'bomb': checkBomb(p),
         'clicked': true,
         'clickedBomb': false,
-        'neighbors': function() {
-          let y = Math.floor(this.position /self.props.width);
-          let x = this.position - y * self.props.width;
-          
-          return [-1, 0, 1].reduce(function(a, yo) {
-              return a.concat(
-                [-1, 0, 1].reduce(function(ra, xo) {
-                  let xs = x + xo, ys = y + yo;
-                  if ((x !== xs || y !== ys) && checkBounds(xs, ys))
-                    ra.push(xs + self.props.width * ys);
-                  return ra;
-                }, [])
-              );
-          }, []);
-          
-          function checkBounds(x, y) {
-            return x >= 0 && y >= 0 && x < self.props.width && y < self.props.height;
-          }
-        },
-        'isNeighbor': function(p) { return p in this.neighbors(); }
+        'neighbors': getNeighbors(p),
+        'isNeighbor': function(p) { return p in this.neighbors; }
       };
     });
 
@@ -67,43 +51,59 @@ class Grid extends Component {
     
     // Gets the display char for the cell
     function getDisplayChar(cell) {
-      if (bombs.checkBomb(cell.position)) {
+      if (checkBomb(cell.position)) {
         return 'b';
       } else {
-        let numberOfBombs = cell.neighbors().reduce(function(a, n) {
-          return a + (bombs.checkBomb(n) ? 1 : 0);
+        let numberOfBombs = cell.neighbors.reduce(function(a, n) {
+          return a + (checkBomb(n) ? 1 : 0);
         }, 0);
         return numberOfBombs === 0 ? '' : numberOfBombs + "";
       }
     }
-  }
-
-  generateBombs() {
-    const median = Math.max(this.props.width, this.props.height);
-    const offset = Math.floor(median / 4);
-    let numberOfBombs = getRandomInt(median + offset, median + 2 * offset);
-
-    // Array holding a number for each cell
-    let pos = [];
-    for (let p = 0; p < this.props.height * this.props.width; p++)
-      pos.push(p);
-
-    // Create map of maps for bombs
-    let bombs = {};
-    while (numberOfBombs-- > 0) {
-      let i = getRandomInt(0, pos.length - 2);
-      bombs[pos[i]] = true;
-
-      // Remove selected element
-      pos.splice(i, 1);
+    
+    // Gets the neighbors for a cell
+    function getNeighbors(p) {
+      let y = Math.floor(p / self.props.width);
+      let x = p - y * self.props.width;
+      
+      return [-1, 0, 1].reduce(function(a, yo) {
+          return a.concat(
+            [-1, 0, 1].reduce(function(ra, xo) {
+              let xs = x + xo, ys = y + yo;
+              if ((x !== xs || y !== ys) && checkBounds(xs, ys))
+                ra.push(xs + self.props.width * ys);
+              return ra;
+            }, [])
+          );
+      }, []);
+      
+      function checkBounds(x, y) {
+        return x >= 0 && y >= 0 && x < self.props.width && y < self.props.height;
+      }
     }
     
-    console.log(bombs);
-
-    return {
-      bombs: bombs,
-      checkBomb: function(p) { return p in bombs; }
-    };
+    // Generates a list of bombs for the board
+    function generateBombs() {
+      const median = Math.max(self.props.width, self.props.height);
+      const offset = Math.floor(median / 4);
+      let numberOfBombs = getRandomInt(median + offset, median + 2 * offset);
+  
+      // Array holding a number for each cell
+      let pos = [];
+      for (let p = 0; p < self.props.height * self.props.width; p++)
+        pos.push(p);
+  
+      // Create map of maps for bombs
+      let bombs = {};
+      while (numberOfBombs-- > 0) {
+        let i = getRandomInt(0, pos.length - 2);
+        bombs[pos[i]] = true;
+  
+        // Remove selected element
+        pos.splice(i, 1);
+      }
+      return function(p) { return p in bombs; }
+    }
   }
 
   createAdjacencyList(state) {
@@ -120,7 +120,7 @@ class Grid extends Component {
 
         // Add the neighbors
         let ind = indLst[cell.position];
-        cell.neighbors().forEach(function(n) {
+        cell.neighbors.forEach(function(n) {
           if (state[n].isOpen && !(n in indLst)) {
             indLst[n] = ind;
             adj[ind].push(n);
