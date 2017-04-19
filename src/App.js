@@ -34,11 +34,10 @@ class Grid extends Component {
     board = board.map((cell, p) => {
       return {
         'position': p,
-        'bomb': checkBomb(p),
+        'isBomb': checkBomb(p),
         'clicked': false,
         'clickedBomb': false,
-        'neighbors': getNeighbors(p),
-        'isNeighbor': function(p) { return p in this.neighbors; }
+        'neighbors': getNeighbors(p)
       };
     });
     
@@ -46,7 +45,7 @@ class Grid extends Component {
     return board.map((cell) => {
       cell.displayChar = getDisplayChar(cell);
       cell.isOpen = cell.displayChar === '';
-      cell.isNum = !cell.isOpen && !cell.bomb;
+      cell.isNum = !cell.isOpen && !cell.isBomb;
       return cell;
     });
     
@@ -87,13 +86,13 @@ class Grid extends Component {
     function generateBombs() {
       const median = Math.max(self.props.width, self.props.height);
       const offset = Math.floor(median / 4);
-      let numberOfBombs = getRandomInt(median + offset, median + 2 * offset);
+      let numberOfBombs = getRandomInt(median + offset, median + 3 * offset);
   
       // Array holding a number for each cell
       let pos = [];
       for (let p = 0; p < self.props.height * self.props.width; p++) { pos.push(p); }
   
-      // Create map of maps for bombs
+      // Create map of positions for bombs
       let bombs = {};
       while (numberOfBombs-- > 0) {
         let i = getRandomInt(0, pos.length - 2);
@@ -113,7 +112,7 @@ class Grid extends Component {
     let state = this.state.boardState.slice();
 
     // Set the state
-    if (cell.bomb)
+    if (cell.isBomb)
       state = this.endGame(state, cell);
     else if (cell.isOpen)
       state = this.openCells(state, cell);
@@ -130,7 +129,7 @@ class Grid extends Component {
     state.map((c) => {
       if (c.position === cell.position)
         c.clickedBomb = true;
-      if (c.bomb)
+      if (c.isBomb)
         c.clicked = true;
       return c;
     });
@@ -139,9 +138,6 @@ class Grid extends Component {
   }
 
   openCells(state, cell) {
-    // Open the cell
-    state[cell.position].clicked = true;
-    
     // Get the adjacent open cells
     let adj = this.state.adjacencyList.getConnected(cell.position);
     
@@ -239,8 +235,7 @@ function UnionFind(board) {
       let nIds = findAll(cell.neighbors.filter((n) => board[n].isOpen));
       
       // Find neighbors not equal to cId and perform a union
-      nIds.filter((nId) => nId !== cId)
-        .map((nId) => union(cId, nId));
+      nIds.filter((nId) => nId !== cId).forEach((nId) => union(cId, nId));
     }
   });
   
@@ -259,12 +254,12 @@ function UnionFind(board) {
     
     // Set all ids equal to qId to pId
     id = id.reduce((a, i) => {
-      if (i === qId) a.push(pId);
-      else a.push(i);
+      a.push(i === qId ? pId : i);
       return a;
     }, []);
   }
   
+  // Return all connected positions (including p)
   function getConnected(p) {
     let pId = id[p];
     return id.reduce((a, cId, c) => {
