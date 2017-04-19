@@ -33,6 +33,7 @@ class Grid extends Component {
         return {
           'x': x,
           'y': y,
+          'position': (x + self.props.width * y),
           'bomb': bombs.checkBomb(x, y),
           'clicked': true,
           'clickedBomb': false,
@@ -40,16 +41,16 @@ class Grid extends Component {
             return [-1, 0, 1].reduce(function(a, yo) {
               return a.concat(
                 [-1, 0, 1].reduce(function(ra, xo) {
-                  let xs = this.x + xo, ys = this.y + yo;
-                  if ((this.x !== xs || this.y !== ys) && self.checkBounds(xs, ys))
+                  let xs = x + xo, ys = y + yo;
+                  if ((x !== xs || y !== ys) && self.checkBounds(xs, ys))
                     ra.push(xs + self.props.width * ys);
                   return ra;
-                }.bind(this), [])
+                }, [])
               );
             }.bind(this), []);
           },
           'isNeighbor': function(x, y) {
-            return this.posNeighbor(this.x + self.props.width * this.y);
+            return this.posNeighbor(x + self.props.width * y);
           },
           'posNeighbor': function(p) {
             return p in this.neighbors();
@@ -122,14 +123,43 @@ class Grid extends Component {
   }
 
   createAdjacencyList(state) {
+    let self = this;
+
     let adj = [];
     state.forEach(function(row) {
       row.forEach(function(cell) {
         if (cell.isOpen) {
-          console.log(cell.neighbors());
+          // Add to the list if not in it
+          if (!inAdjList(cell))
+            adj.push([cell.position]);
+
+          // Add the neighbors
+          let ind = adjIndex(cell);
+          cell.neighbors().forEach(function(n) {
+            let y = Math.floor(n / self.props.width);
+            let x = n - self.props.width * y;
+            if (state[y][x].isOpen && (adj[ind].indexOf(n) === -1)) {
+              adj[ind].push(n);
+            }
+          });
         }
       });
     });
+
+    console.log(adj);
+
+    function adjIndex(cell) {
+      let ind = -1;
+      adj.forEach(function(set, i) {
+        if (cell.position in set)
+          ind = i;
+      });
+      return ind;
+    }
+
+    function inAdjList(cell) {
+      return adj.some(function(set) {return cell.position in set;});
+    }
   }
 
   handleClick(cell) {
