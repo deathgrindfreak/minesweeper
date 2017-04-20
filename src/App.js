@@ -3,7 +3,7 @@ import './App.css';
 
 class App extends Component {
   render() {
-      return <Grid height={10} width={20}/>;
+      return <Grid height={10} width={10}/>;
   }
 }
 
@@ -25,19 +25,25 @@ class Grid extends Component {
     let self = this;
     
     // Generate the bombs
-    let checkBomb = generateBombs();
-
+    let bombs = generateBombs();
+    
     // Empty board
     let board = Array(this.props.height * this.props.width).fill(null);
 
     // Create the board with bomb locations
     board = board.map((cell, p) => {
+      let clicked = false;
+      let flag = false;
       return {
         'position': p,
-        'isBomb': checkBomb(p),
-        'clicked': false,
+        'isBomb': bombs.isBomb(p),
+        'clicked': () => clicked,
         'clickedBomb': false,
-        'neighbors': getNeighbors(p)
+        'flag': () => flag,
+        'flagClicked': () => flag = !flag,
+        'neighbors': getNeighbors(p),
+        'winnerClicked': () => bombs.bombCount === unclickedCells(),
+        'clickCell': () => clicked = true
       };
     });
     
@@ -49,13 +55,18 @@ class Grid extends Component {
       return cell;
     });
     
+    // Number of cells yet to be clicked
+    function unclickedCells() {
+      return board.reduce((a, c) => c.clicked() ? a : a + 1, 0);
+    }
+    
     // Gets the display char for the cell
     function getDisplayChar(cell) {
-      if (checkBomb(cell.position)) {
+      if (bombs.isBomb(cell.position)) {
         return 'b';
       } else {
         let numberOfBombs = cell.neighbors.reduce((a, n) => {
-          return a + (checkBomb(n) ? 1 : 0);
+          return a + (bombs.isBomb(n) ? 1 : 0);
         }, 0);
         return numberOfBombs === 0 ? '' : numberOfBombs + "";
       }
@@ -101,24 +112,47 @@ class Grid extends Component {
         // Remove selected element
         pos.splice(i, 1);
       }
-      return (p) => p in bombs;
+      return { 
+        'bombCount': Object.keys(bombs).length,
+        'isBomb': (p) => p in bombs
+      };
     }
   }
 
-  handleClick(cell) {
-    if (this.state.gameOver) return;
+  handleClick(ctrlKey, cell) {
+    // Ignore click if game over, cell is already clicked or flagged
+    if (this.state.gameOver || cell.clicked() || (!ctrlKey && cell.flag())) return;
 
     // Copy the board
     let state = this.state.boardState.slice();
+    
+    // If control was held, the user was placing a flag
+    if (ctrlKey) {
+      state[cell.position].flagClicked();
+      this.setState(state);
+      return;
+    }
+    
+    // Click the cell
+    state[cell.position].clickCell();
 
     // Set the state
-    if (cell.isBomb)
+    if (cell.winnerClicked())
+      state = this.winGame(state, cell);
+    else if (cell.isBomb)
       state = this.endGame(state, cell);
     else if (cell.isOpen)
       state = this.openCells(state, cell);
-    else
-      state[cell.position].clicked = true;
     this.setState(state);
+  }
+  
+  winGame(state, cell) {
+    // End the game
+    state.gameOver = true;
+    
+    console.log("Win!!!");
+    
+    return state;
   }
 
   endGame(state, cell) {
@@ -130,7 +164,7 @@ class Grid extends Component {
       if (c.position === cell.position)
         c.clickedBomb = true;
       if (c.isBomb)
-        c.clicked = true;
+        c.clickCell();
       return c;
     });
 
@@ -143,10 +177,10 @@ class Grid extends Component {
     
     // Open all adjacent open cells as well as neighboring number cells
     adj.forEach((p) => {
-      state[p].clicked = true;
+      state[p].clickCell();
       state[p].neighbors.forEach((np) => {
         if (state[np].isNum)
-          state[np].clicked = true;
+          state[np].clickCell();
       });
     });
     
@@ -161,7 +195,7 @@ class Grid extends Component {
         return (
           <Cell key={cell.position} 
                 cellState={cell} 
-                onClick={() => this.handleClick(cell)} />
+                onClick={(ctrlKey) => this.handleClick(ctrlKey, cell)} />
         );
       });
       return <tr key={y}>{cells}</tr>;
@@ -201,19 +235,25 @@ class Cell extends Component {
   getId(cell) {
     if(cell.clickedBomb)
       return "hit-cell";
-    else if (cell.clicked)
+    else if (cell.clicked())
       return "mine-clicked";
     return "mine-button";
   }
 
   render() {
-    let displayChar = this.props.cellState.displayChar;
+    let cell = this.props.cellState;
+    let displayChar;
+    if (cell.flag())
+      displayChar = 'f';
+    else
+      displayChar = cell.clicked() ? cell.displayChar : '';
+    
     return (
       <td className="mine-cell"
           id={this.getId(this.props.cellState)}
-          onClick={() => this.props.onClick()}>
+          onClick={(e) => this.props.onClick(e.ctrlKey)}>
         <span id={this.getDisplayStyle(displayChar)}>
-          {this.props.cellState.clicked ? displayChar : ''}
+          {displayChar}
         </span>
       </td>
     );
