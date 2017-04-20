@@ -1,5 +1,6 @@
 import React, { Component } from 'react';
 import './App.css';
+import './font-awesome-4.7.0/css/font-awesome.min.css';
 
 class App extends Component {
   render() {
@@ -41,6 +42,8 @@ class Grid extends Component {
         'clickedBomb': false,
         'flag': () => flag,
         'flagClicked': () => flag = !flag,
+        'falseFlag': false,
+        'falseFlagClicked': () => { flag = false; this.falseFlag = true; },
         'neighbors': getNeighbors(p),
         'winnerClicked': () => bombs.bombCount === unclickedCells(),
         'clickCell': () => clicked = true
@@ -50,7 +53,7 @@ class Grid extends Component {
     // Fill in the numbers displaying the number of adjacent bombs
     return board.map((cell) => {
       cell.displayChar = getDisplayChar(cell);
-      cell.isOpen = cell.displayChar === '';
+      cell.isOpen = cell.displayChar() === '';
       cell.isNum = !cell.isOpen && !cell.isBomb;
       return cell;
     });
@@ -62,14 +65,18 @@ class Grid extends Component {
     
     // Gets the display char for the cell
     function getDisplayChar(cell) {
-      if (bombs.isBomb(cell.position)) {
-        return 'b';
-      } else {
-        let numberOfBombs = cell.neighbors.reduce((a, n) => {
-          return a + (bombs.isBomb(n) ? 1 : 0);
-        }, 0);
-        return numberOfBombs === 0 ? '' : numberOfBombs + "";
-      }
+      return () => {
+        if (cell.flag()) {
+          return <Flag />;
+        } else if (cell.isBomb) {
+          return <Bomb />;
+        } else {
+          let numberOfBombs = cell.neighbors.reduce((a, n) => {
+            return a + (bombs.isBomb(n) ? 1 : 0);
+          }, 0);
+          return numberOfBombs === 0 ? '' : numberOfBombs + "";
+        }
+      };
     }
     
     // Gets the neighbors for a cell
@@ -165,6 +172,13 @@ class Grid extends Component {
         c.clickedBomb = true;
       if (c.isBomb)
         c.clickCell();
+        
+      // Clear flags
+      if (c.flag())
+        if (c.isBomb)
+          c.falseFlagClicked();
+        else
+          c.flagClicked();
       return c;
     });
 
@@ -233,8 +247,10 @@ class Cell extends Component {
   }
 
   getId(cell) {
-    if(cell.clickedBomb)
+    if (cell.clickedBomb)
       return "hit-cell";
+    else if (cell.falseFlag)
+      return "false-flag";
     else if (cell.clicked())
       return "mine-clicked";
     return "mine-button";
@@ -242,20 +258,41 @@ class Cell extends Component {
 
   render() {
     let cell = this.props.cellState;
-    let displayChar;
-    if (cell.flag())
-      displayChar = 'f';
-    else
-      displayChar = cell.clicked() ? cell.displayChar : '';
-    
+    let displayChar = cell.displayChar();
     return (
       <td className="mine-cell"
-          id={this.getId(this.props.cellState)}
+          id={this.getId(cell)}
           onClick={(e) => this.props.onClick(e.ctrlKey)}>
-        <span id={this.getDisplayStyle(displayChar)}>
-          {displayChar}
-        </span>
+          { cell.clicked() || cell.flag() 
+            ? <span id={this.getDisplayStyle(displayChar)}>{displayChar}</span>
+            : '' }
       </td>
+    );
+  }
+}
+
+// Wrapper for Font Awesome bomb (pre-renders the component)
+class Bomb extends Component {
+  componentDidMount() {
+    this.forceUpdate();
+  }
+  
+  render() {
+    return <i className="fa fa-bomb" aria-hidden="true"></i>;
+  }
+}
+
+// Wrapper for Font Awesome flag (pre-renders the component)
+class Flag extends Component {
+  componentDidMount() {
+    this.forceUpdate();
+  }
+  
+  render() {
+    return (
+      <i className="fa fa-flag" 
+         style={{color: "red"}}
+         aria-hidden="true"></i>
     );
   }
 }
