@@ -4,21 +4,29 @@ import './font-awesome-4.7.0/css/font-awesome.min.css';
 
 class App extends Component {
   render() {
-      return <Grid height={10} width={10}/>;
+      return (
+        <div className="container">
+          <Grid height={10} width={10} />
+        </div>
+      );
   }
 }
 
 class Grid extends Component {
   constructor(props) {
     super(props);
-
+    this.state = this.createState();
+  }
+  
+  createState() {
     let board = this.createBoard();
     let adjacencyList = UnionFind(board);
     
-    this.state = {
+    return {
       boardState: board,
       adjacencyList: adjacencyList,
-      gameOver: false
+      gameOver: false,
+      gameWon: false
     };
   }
 
@@ -125,10 +133,19 @@ class Grid extends Component {
       };
     }
   }
+  
+  resetClicked() {
+    this.setState(this.createState());
+  }
 
   handleClick(ctrlKey, cell) {
     // Ignore click if game over, cell is already clicked or flagged
-    if (this.state.gameOver || cell.clicked() || (!ctrlKey && cell.flag())) return;
+    if (this.state.gameOver 
+      || this.state.gameWon
+      || cell.clicked() 
+      || (!ctrlKey && cell.flag())) {
+        return;
+    }
 
     // Copy the board
     let state = this.state.boardState.slice();
@@ -150,21 +167,25 @@ class Grid extends Component {
       state = this.endGame(state, cell);
     else if (cell.isOpen)
       state = this.openCells(state, cell);
-    this.setState(state);
+    this.setState({ boardState: state });
   }
   
   winGame(state, cell) {
     // End the game
-    state.gameOver = true;
+    this.state.gameWon = true;
     
-    console.log("Win!!!");
+    // Automatically set flags for unclicked and unflagged cells
+    state.map((c) => {
+      if (!c.clicked() && !c.flag()) 
+        c.flagClicked();
+    });
     
     return state;
   }
 
   endGame(state, cell) {
     // End the game
-    state.gameOver = true;
+    this.state.gameOver = true;
 
     // Show all bombs
     state.map((c) => {
@@ -216,11 +237,21 @@ class Grid extends Component {
     });
 
     return (
-      <table className="mine-table">
-        <tbody>
-          {rows}
-        </tbody>
-      </table>
+      <div className="game-body">
+        <div className="status-body">
+          <div className="score status">101</div>
+          <FaceButton gameState={this.state} 
+                      onClick={() => this.resetClicked()} />
+          <div className="time status">101</div>
+        </div>
+        <div className="grid-body">
+          <table className="mine-table">
+            <tbody>
+              {rows}
+            </tbody>
+          </table>
+        </div>
+      </div>
     );
   }
 }
@@ -267,6 +298,26 @@ class Cell extends Component {
             ? <span id={this.getDisplayStyle(displayChar)}>{displayChar}</span>
             : '' }
       </td>
+    );
+  }
+}
+
+class FaceButton extends Component {
+  getFace() {
+    if (this.props.gameState.gameWon)
+      return "heart";
+    else if (this.props.gameState.gameOver)
+      return "frown";
+    return "smile";
+  }
+  
+  render() {
+    let smileClass = "fa fa-" + this.getFace() + "-o fa-2x";
+    return (
+      <button className="game-button" onClick={() => this.props.onClick()}>
+        <i className={smileClass}
+           aria-hidden="true"></i>
+      </button>
     );
   }
 }

@@ -2,8 +2,82 @@ body {
     box-sizing: border-box;
 }
 
-.mine-table {
+.game-body {
+    background-color: #ccc;
+    display: table;
     margin: 0 auto;
+    text-align: center;
+    font-family: helvetica, sans-serif;
+    padding: 15px;
+    border-top: 6px solid #eee;
+    border-right: 6px solid #aaa;
+    border-bottom: 6px solid #aaa;
+    border-left: 6px solid #eee;
+}
+
+.grid-body {
+    border-top: 6px solid #aaa;
+    border-right: 6px solid #eee;
+    border-bottom: 6px solid #eee;
+    border-left: 6px solid #aaa;
+}
+
+.status-body {
+    height: 40px;
+    padding: 5px;
+    margin-bottom: 15px;
+    border-top: 6px solid #aaa;
+    border-right: 6px solid #eee;
+    border-bottom: 6px solid #eee;
+    border-left: 6px solid #aaa;
+}
+
+.game-button {
+    height: 40px;
+    background-color: yellow;
+    border-top: 5px solid #eee;
+    border-right: 5px solid #aaa;
+    border-bottom: 5px solid #aaa;
+    border-left: 5px solid #eee;
+}
+
+.game-button:active {
+    height: 40px;
+    background-color: yellow;
+    border-top: 5px solid #aaa;
+    border-right: 5px solid #eee;
+    border-bottom: 5px solid #eee;
+    border-left: 5px solid #aaa;
+}
+
+.game-button:focus {
+    outline: 0;
+}
+
+.status {
+    color: red;
+    background-color: black;
+    text-align: center;
+    font-size: 2em;
+    font-weight: bold;
+    height: 30px;
+    width: 63px;
+    padding: 0 2px 5px 2px;
+    border-top: 2px solid #aaa;
+    border-right: 2px solid #eee;
+    border-bottom: 2px solid #eee;
+    border-left: 2px solid #aaa;
+}
+
+.score {
+    float: left;
+}
+
+.time {
+    float: right;
+}
+
+.mine-table {
     border: none;
     background-color: #777;
 }
