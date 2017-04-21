@@ -153,7 +153,13 @@ class Grid extends Component {
   }
 
   resetClicked() {
-    this.setState(this.createState());
+    // Ensure that the previous timer is cleared
+    clearInterval(this.state.timer);
+    
+    let w = this.state.width;
+    let h = this.state.height;
+    let n = this.state.numberOfBombs;
+    this.setState(this.createState(w, h, n));
   }
 
   handleClick(shiftKey, cell) {
