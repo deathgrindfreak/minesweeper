@@ -17,25 +17,24 @@ class Grid extends Component {
     super(props);
     this.state = this.createState();
   }
-  
+
   createState() {
-    let board = this.createBoard();
+    let bombs = this.generateBombs();
+    let board = this.createBoard(bombs);
     let adjacencyList = UnionFind(board);
-    
+
     return {
       boardState: board,
       adjacencyList: adjacencyList,
       gameOver: false,
-      gameWon: false
+      gameWon: false,
+      availableFlags: bombs.bombCount
     };
   }
 
-  createBoard() {
+  createBoard(bombs) {
     let self = this;
-    
-    // Generate the bombs
-    let bombs = generateBombs();
-    
+
     // Empty board
     let board = Array(this.props.height * this.props.width).fill(null);
 
@@ -49,7 +48,17 @@ class Grid extends Component {
         'clicked': () => clicked,
         'clickedBomb': false,
         'flag': () => flag,
-        'flagClicked': () => flag = !flag,
+        'flagClicked': () => {
+          let bombCount = this.state.availableFlags;
+          if (flag) {
+            this.setState({availableFlags: bombCount + 1});
+          } else {
+            if (bombCount == 0)
+              return;
+            this.setState({availableFlags: bombCount - 1});
+          }
+          flag = !flag;
+        },
         'falseFlag': false,
         'falseFlagClicked': () => { flag = false; this.falseFlag = true; },
         'neighbors': getNeighbors(p),
@@ -57,7 +66,7 @@ class Grid extends Component {
         'clickCell': () => clicked = true
       };
     });
-    
+
     // Fill in the numbers displaying the number of adjacent bombs
     return board.map((cell) => {
       cell.displayChar = getDisplayChar(cell);
@@ -65,12 +74,12 @@ class Grid extends Component {
       cell.isNum = !cell.isOpen && !cell.isBomb;
       return cell;
     });
-    
+
     // Number of cells yet to be clicked
     function unclickedCells() {
       return board.reduce((a, c) => c.clicked() ? a : a + 1, 0);
     }
-    
+
     // Gets the display char for the cell
     function getDisplayChar(cell) {
       return () => {
@@ -86,12 +95,12 @@ class Grid extends Component {
         }
       };
     }
-    
+
     // Gets the neighbors for a cell
     function getNeighbors(p) {
       let y = Math.floor(p / self.props.width);
       let x = p - y * self.props.width;
-      
+
       return [-1, 0, 1].reduce((a, yo) => {
           return a.concat(
             [-1, 0, 1].reduce((ra, xo) => {
@@ -102,61 +111,61 @@ class Grid extends Component {
             }, [])
           );
       }, []);
-      
+
       function checkBounds(x, y) {
         return x >= 0 && y >= 0 && x < self.props.width && y < self.props.height;
       }
     }
-    
-    // Generates a list of bombs for the board
-    function generateBombs() {
-      const median = Math.max(self.props.width, self.props.height);
-      const offset = Math.floor(median / 4);
-      let numberOfBombs = getRandomInt(median + offset, median + 3 * offset);
-  
-      // Array holding a number for each cell
-      let pos = [];
-      for (let p = 0; p < self.props.height * self.props.width; p++) { pos.push(p); }
-  
-      // Create map of positions for bombs
-      let bombs = {};
-      while (numberOfBombs-- > 0) {
-        let i = getRandomInt(0, pos.length - 2);
-        bombs[pos[i]] = true;
-  
-        // Remove selected element
-        pos.splice(i, 1);
-      }
-      return { 
-        'bombCount': Object.keys(bombs).length,
-        'isBomb': (p) => p in bombs
-      };
-    }
   }
-  
+
+  generateBombs() {
+    const median = Math.max(this.props.width, this.props.height);
+    const offset = Math.floor(median / 4);
+    let numberOfBombs = getRandomInt(median + offset, median + 3 * offset);
+
+    // Array holding a number for each cell
+    let pos = [];
+    for (let p = 0; p < this.props.height * this.props.width; p++) { pos.push(p); }
+
+    // Create map of positions for bombs
+    let bombs = {};
+    while (numberOfBombs-- > 0) {
+      let i = getRandomInt(0, pos.length - 2);
+      bombs[pos[i]] = true;
+
+      // Remove selected element
+      pos.splice(i, 1);
+    }
+
+    return {
+      'bombCount': Object.keys(bombs).length,
+      'isBomb': (p) => p in bombs
+    };
+  }
+
   resetClicked() {
     this.setState(this.createState());
   }
 
-  handleClick(ctrlKey, cell) {
+  handleClick(shiftKey, cell) {
     // Ignore click if game over, cell is already clicked or flagged
-    if (this.state.gameOver 
+    if (this.state.gameOver
       || this.state.gameWon
-      || cell.clicked() 
-      || (!ctrlKey && cell.flag())) {
+      || cell.clicked()
+      || (!shiftKey && cell.flag())) {
         return;
     }
 
     // Copy the board
     let state = this.state.boardState.slice();
-    
+
     // If control was held, the user was placing a flag
-    if (ctrlKey) {
+    if (shiftKey) {
       state[cell.position].flagClicked();
       this.setState(state);
       return;
     }
-    
+
     // Click the cell
     state[cell.position].clickCell();
 
@@ -169,23 +178,23 @@ class Grid extends Component {
       state = this.openCells(state, cell);
     this.setState({ boardState: state });
   }
-  
+
   winGame(state, cell) {
     // End the game
-    this.state.gameWon = true;
-    
+    this.setState({gameWon: true});
+
     // Automatically set flags for unclicked and unflagged cells
-    state.map((c) => {
-      if (!c.clicked() && !c.flag()) 
+    state.forEach((c) => {
+      if (!c.clicked() && !c.flag())
         c.flagClicked();
     });
-    
+
     return state;
   }
 
   endGame(state, cell) {
     // End the game
-    this.state.gameOver = true;
+    this.setState({gameOver: true});
 
     // Show all bombs
     state.map((c) => {
@@ -193,7 +202,7 @@ class Grid extends Component {
         c.clickedBomb = true;
       if (c.isBomb)
         c.clickCell();
-        
+
       // Clear flags
       if (c.flag())
         if (c.isBomb)
@@ -209,7 +218,7 @@ class Grid extends Component {
   openCells(state, cell) {
     // Get the adjacent open cells
     let adj = this.state.adjacencyList.getConnected(cell.position);
-    
+
     // Open all adjacent open cells as well as neighboring number cells
     adj.forEach((p) => {
       state[p].clickCell();
@@ -218,7 +227,7 @@ class Grid extends Component {
           state[np].clickCell();
       });
     });
-    
+
     return state;
   }
 
@@ -228,9 +237,9 @@ class Grid extends Component {
       let cells = Array(this.props.width).fill(null).map((c, x) => {
         let cell = this.state.boardState[x + this.props.width * y];
         return (
-          <Cell key={cell.position} 
-                cellState={cell} 
-                onClick={(ctrlKey) => this.handleClick(ctrlKey, cell)} />
+          <Cell key={cell.position}
+                cellState={cell}
+                onClick={(shiftKey) => this.handleClick(shiftKey, cell)} />
         );
       });
       return <tr key={y}>{cells}</tr>;
@@ -239,8 +248,8 @@ class Grid extends Component {
     return (
       <div className="game-body">
         <div className="status-body">
-          <div className="score status">101</div>
-          <FaceButton gameState={this.state} 
+          <div className="score status">{leftPad(this.state.availableFlags, 3)}</div>
+          <FaceButton gameState={this.state}
                       onClick={() => this.resetClicked()} />
           <div className="time status">101</div>
         </div>
@@ -293,8 +302,8 @@ class Cell extends Component {
     return (
       <td className="mine-cell"
           id={this.getId(cell)}
-          onClick={(e) => this.props.onClick(e.ctrlKey)}>
-          { cell.clicked() || cell.flag() 
+          onClick={(e) => this.props.onClick(e.shiftKey)}>
+          { cell.clicked() || cell.flag()
             ? <span id={this.getDisplayStyle(displayChar)}>{displayChar}</span>
             : '' }
       </td>
@@ -305,17 +314,18 @@ class Cell extends Component {
 class FaceButton extends Component {
   getFace() {
     if (this.props.gameState.gameWon)
-      return "heart";
+      return "smile";
     else if (this.props.gameState.gameOver)
       return "frown";
-    return "smile";
+    return "meh";
   }
-  
+
   render() {
-    let smileClass = "fa fa-" + this.getFace() + "-o fa-2x";
+    let smileClass = "fa fa-" + this.getFace() + "-o fa-3x";
     return (
       <button className="game-button" onClick={() => this.props.onClick()}>
         <i className={smileClass}
+           id="game-button-icon"
            aria-hidden="true"></i>
       </button>
     );
@@ -327,7 +337,7 @@ class Bomb extends Component {
   componentDidMount() {
     this.forceUpdate();
   }
-  
+
   render() {
     return <i className="fa fa-bomb" aria-hidden="true"></i>;
   }
@@ -338,10 +348,11 @@ class Flag extends Component {
   componentDidMount() {
     this.forceUpdate();
   }
-  
+
   render() {
     return (
-      <i className="fa fa-flag" 
+      <i className="fa fa-flag"
+         id="flag-button"
          style={{color: "red"}}
          aria-hidden="true"></i>
     );
@@ -353,40 +364,40 @@ function UnionFind(board) {
   // Represents set of blocks based on position
   let id = [];
   for (let i = 0; i < board.length; i++) { id.push(i); }
-  
+
   // Build the adjacency list for the board
   board.forEach((cell) => {
     if (cell.isOpen) {
       let cId = find(cell.position);
-      
+
       // Find all ids for open neighbors
       let nIds = findAll(cell.neighbors.filter((n) => board[n].isOpen));
-      
+
       // Find neighbors not equal to cId and perform a union
       nIds.filter((nId) => nId !== cId).forEach((nId) => union(cId, nId));
     }
   });
-  
+
   // Find the id of p
   function find(p) { return id[p]; }
-  
+
   // Find all ids for ps
   function findAll(ps) { return ps.map((p) => find(p)); }
-  
+
   // Combine two sets
   function union(p, q) {
     let pId = find(p), qId = find(q);
-    
+
     // Return if already joined
     if (pId === qId) return;
-    
+
     // Set all ids equal to qId to pId
     id = id.reduce((a, i) => {
       a.push(i === qId ? pId : i);
       return a;
     }, []);
   }
-  
+
   // Return all connected positions (including p)
   function getConnected(p) {
     let pId = id[p];
@@ -395,13 +406,23 @@ function UnionFind(board) {
       return a;
     }, []);
   }
-  
+
   return {
     find: find,
     findAll: findAll,
     union: union,
     getConnected: getConnected
   };
+}
+
+// Left pad a number
+function leftPad(num, n) {
+  let str = num + '';
+  if (str.length >= n)
+    return str;
+  while (str.length < n)
+    str = "0" + str;
+  return str;
 }
 
 // Generate a random number from min to max

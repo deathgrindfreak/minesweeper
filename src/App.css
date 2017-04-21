@@ -2,6 +2,10 @@ body {
     box-sizing: border-box;
 }
 
+.container {
+    margin-top: 10px;
+}
+
 .game-body {
     background-color: #ccc;
     display: table;
@@ -23,7 +27,7 @@ body {
 }
 
 .status-body {
-    height: 40px;
+    height: 47px;
     padding: 5px;
     margin-bottom: 15px;
     border-top: 6px solid #aaa;
@@ -33,17 +37,25 @@ body {
 }
 
 .game-button {
-    height: 40px;
-    background-color: yellow;
+    height: 47px;
+    padding-bottom: 0;
     border-top: 5px solid #eee;
     border-right: 5px solid #aaa;
     border-bottom: 5px solid #aaa;
     border-left: 5px solid #eee;
 }
 
+#game-button-icon {
+    background: yellow;
+    border-radius: 50%;
+    height: .85em;
+    width: .85em;
+    line-height: 85%;
+}
+
 .game-button:active {
-    height: 40px;
-    background-color: yellow;
+    height: 47px;
+    padding-bottom: 0;
     border-top: 5px solid #aaa;
     border-right: 5px solid #eee;
     border-bottom: 5px solid #eee;
@@ -58,11 +70,11 @@ body {
     color: red;
     background-color: black;
     text-align: center;
-    font-size: 2em;
+    font-size: 2.1em;
     font-weight: bold;
-    height: 30px;
+    height: 36px;
     width: 63px;
-    padding: 0 2px 5px 2px;
+    padding: 3px 2px 5px 2px;
     border-top: 2px solid #aaa;
     border-right: 2px solid #eee;
     border-bottom: 2px solid #eee;
@@ -85,9 +97,9 @@ body {
 .mine-cell {
     text-align: center;
     font-weight: bold;
-    font-size: 1.3em;
-    width: 32px;
-    height: 32px;
+    font-size: 1.2em;
+    width: 30px;
+    height: 30px;
 }
 
 #mine-clicked {
@@ -95,8 +107,8 @@ body {
 }
 
 #mine-button {
-    width: 24px;
-    height: 24px;
+    width: 22px;
+    height: 22px;
     background-color: #ccc;
     border-top: 4px solid #eee;
     border-right: 4px solid #aaa;
