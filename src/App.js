@@ -28,7 +28,9 @@ class Grid extends Component {
       adjacencyList: adjacencyList,
       gameOver: false,
       gameWon: false,
-      availableFlags: bombs.bombCount
+      availableFlags: bombs.bombCount,
+      time: 0,
+      timer: null
     };
   }
 
@@ -46,6 +48,7 @@ class Grid extends Component {
         'position': p,
         'isBomb': bombs.isBomb(p),
         'clicked': () => clicked,
+        'clickCell': () => clicked = true,
         'clickedBomb': false,
         'flag': () => flag,
         'flagClicked': () => {
@@ -53,7 +56,7 @@ class Grid extends Component {
           if (flag) {
             this.setState({availableFlags: bombCount + 1});
           } else {
-            if (bombCount == 0)
+            if (bombCount === 0)
               return;
             this.setState({availableFlags: bombCount - 1});
           }
@@ -62,8 +65,7 @@ class Grid extends Component {
         'falseFlag': false,
         'falseFlagClicked': () => { flag = false; this.falseFlag = true; },
         'neighbors': getNeighbors(p),
-        'winnerClicked': () => bombs.bombCount === unclickedCells(),
-        'clickCell': () => clicked = true
+        'winnerClicked': () => bombs.bombCount === unclickedCells()
       };
     });
 
@@ -156,6 +158,17 @@ class Grid extends Component {
         return;
     }
 
+    // Start the timer
+    if (this.state.timer === null) {
+      let timer = setInterval(() => {
+        this.setState((prevState, props) => {
+          let t = prevState.time;
+          return {time: (t < 999 ? t + 1 : t)};
+        });
+      }, 1000);
+      this.setState({timer: timer});
+    }
+
     // Copy the board
     let state = this.state.boardState.slice();
 
@@ -180,8 +193,12 @@ class Grid extends Component {
   }
 
   winGame(state, cell) {
+    // Stop the timer
+    let timer = this.state.timer;
+    clearInterval(timer);
+
     // End the game
-    this.setState({gameWon: true});
+    this.setState({gameWon: true, timer: null});
 
     // Automatically set flags for unclicked and unflagged cells
     state.forEach((c) => {
@@ -193,8 +210,12 @@ class Grid extends Component {
   }
 
   endGame(state, cell) {
+    // Stop the timer
+    let timer = this.state.timer;
+    clearInterval(timer);
+
     // End the game
-    this.setState({gameOver: true});
+    this.setState({gameOver: true, timer: null});
 
     // Show all bombs
     state.map((c) => {
@@ -251,7 +272,7 @@ class Grid extends Component {
           <div className="score status">{leftPad(this.state.availableFlags, 3)}</div>
           <FaceButton gameState={this.state}
                       onClick={() => this.resetClicked()} />
-          <div className="time status">101</div>
+          <div className="time status">{leftPad(this.state.time, 3)}</div>
         </div>
         <div className="grid-body">
           <table className="mine-table">
