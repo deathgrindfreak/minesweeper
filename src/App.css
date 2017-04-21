@@ -17,6 +17,7 @@ body {
     font-size: 1em;
     background-color: #eee;
     border: none;
+    outline: 0;
 }
 
 .ms-body {
