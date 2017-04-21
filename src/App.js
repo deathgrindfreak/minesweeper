@@ -198,7 +198,7 @@ class Grid extends Component {
     clearInterval(timer);
 
     // End the game
-    this.setState({gameWon: true, timer: null});
+    this.setState({gameWon: true});
 
     // Automatically set flags for unclicked and unflagged cells
     state.forEach((c) => {
@@ -215,7 +215,7 @@ class Grid extends Component {
     clearInterval(timer);
 
     // End the game
-    this.setState({gameOver: true, timer: null});
+    this.setState({gameOver: true});
 
     // Show all bombs
     state.map((c) => {
