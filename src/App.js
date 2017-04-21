@@ -4,11 +4,7 @@ import './font-awesome-4.7.0/css/font-awesome.min.css';
 
 class App extends Component {
   render() {
-      return (
-        <div className="container">
-          <Grid />
-        </div>
-      );
+      return <div className="container"><Grid /></div>;
   }
 }
 
@@ -38,6 +34,9 @@ class Grid extends Component {
   }
 
   difficultySelect(event) {
+    // Ensure that the interval is cleared
+    clearInterval(this.state.timer);
+    
     let d = event.target.value;
     if (d === 'b')
       this.setState(this.createState(9, 9, 10));
@@ -462,8 +461,6 @@ function UnionFind(board) {
 // Left pad a number
 function leftPad(num, n) {
   let str = num + '';
-  if (str.length >= n)
-    return str;
   while (str.length < n)
     str = "0" + str;
   return str;
