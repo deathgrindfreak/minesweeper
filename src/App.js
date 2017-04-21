@@ -36,7 +36,7 @@ class Grid extends Component {
   difficultySelect(event) {
     // Ensure that the interval is cleared
     clearInterval(this.state.timer);
-    
+
     let d = event.target.value;
     if (d === 'b')
       this.setState(this.createState(9, 9, 10));
@@ -154,7 +154,7 @@ class Grid extends Component {
   resetClicked() {
     // Ensure that the previous timer is cleared
     clearInterval(this.state.timer);
-    
+
     let w = this.state.width;
     let h = this.state.height;
     let n = this.state.numberOfBombs;
@@ -195,10 +195,10 @@ class Grid extends Component {
     state[cell.position].clickCell();
 
     // Set the state
-    if (cell.winnerClicked())
-      state = this.winGame(state, cell);
-    else if (cell.isBomb)
+    if (cell.isBomb)
       state = this.endGame(state, cell);
+    else if (cell.winnerClicked())
+      state = this.winGame(state, cell);
     else if (cell.isOpen)
       state = this.openCells(state, cell);
     this.setState({ boardState: state });
