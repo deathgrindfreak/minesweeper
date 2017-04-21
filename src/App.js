@@ -44,7 +44,7 @@ class Grid extends Component {
     else if (d === 'i')
       this.setState(this.createState(16, 16, 40));
     else if (d === 'e')
-      this.setState(this.createState(16, 30, 99));
+      this.setState(this.createState(30, 16, 99));
   }
 
   createBoard(width, height, bombs) {
