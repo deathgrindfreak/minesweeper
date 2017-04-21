@@ -6,24 +6,27 @@ class App extends Component {
   render() {
       return (
         <div className="container">
-          <Grid height={10} width={10} />
+          <Grid />
         </div>
       );
   }
 }
 
 class Grid extends Component {
-  constructor(props) {
-    super(props);
-    this.state = this.createState();
+  constructor() {
+    super();
+    this.state = this.createState(9, 9, 10);
   }
 
-  createState() {
-    let bombs = this.generateBombs();
-    let board = this.createBoard(bombs);
+  createState(width, height, numberOfBombs) {
+    let bombs = this.generateBombs(width, height, numberOfBombs);
+    let board = this.createBoard(width, height, bombs);
     let adjacencyList = UnionFind(board);
 
     return {
+      width: width,
+      height: height,
+      numberOfBombs: numberOfBombs,
       boardState: board,
       adjacencyList: adjacencyList,
       gameOver: false,
@@ -34,11 +37,19 @@ class Grid extends Component {
     };
   }
 
-  createBoard(bombs) {
-    let self = this;
+  difficultySelect(event) {
+    let d = event.target.value;
+    if (d === 'b')
+      this.setState(this.createState(9, 9, 10));
+    else if (d === 'i')
+      this.setState(this.createState(16, 16, 40));
+    else if (d === 'e')
+      this.setState(this.createState(16, 30, 99));
+  }
 
+  createBoard(width, height, bombs) {
     // Empty board
-    let board = Array(this.props.height * this.props.width).fill(null);
+    let board = Array(height * width).fill(null);
 
     // Create the board with bomb locations
     board = board.map((cell, p) => {
@@ -100,34 +111,30 @@ class Grid extends Component {
 
     // Gets the neighbors for a cell
     function getNeighbors(p) {
-      let y = Math.floor(p / self.props.width);
-      let x = p - y * self.props.width;
+      let y = Math.floor(p / width);
+      let x = p - y * width;
 
       return [-1, 0, 1].reduce((a, yo) => {
           return a.concat(
             [-1, 0, 1].reduce((ra, xo) => {
               let xs = x + xo, ys = y + yo;
               if ((x !== xs || y !== ys) && checkBounds(xs, ys))
-                ra.push(xs + self.props.width * ys);
+                ra.push(xs + width * ys);
               return ra;
             }, [])
           );
       }, []);
 
       function checkBounds(x, y) {
-        return x >= 0 && y >= 0 && x < self.props.width && y < self.props.height;
+        return x >= 0 && y >= 0 && x < width && y < height;
       }
     }
   }
 
-  generateBombs() {
-    const median = Math.max(this.props.width, this.props.height);
-    const offset = Math.floor(median / 4);
-    let numberOfBombs = getRandomInt(median + offset, median + 3 * offset);
-
+  generateBombs(width, height, numberOfBombs) {
     // Array holding a number for each cell
     let pos = [];
-    for (let p = 0; p < this.props.height * this.props.width; p++) { pos.push(p); }
+    for (let p = 0; p < height * width; p++) { pos.push(p); }
 
     // Create map of positions for bombs
     let bombs = {};
@@ -254,9 +261,9 @@ class Grid extends Component {
 
   render() {
     // Create the table body
-    let rows = Array(this.props.height).fill(null).map((r, y) => {
-      let cells = Array(this.props.width).fill(null).map((c, x) => {
-        let cell = this.state.boardState[x + this.props.width * y];
+    let rows = Array(this.state.height).fill(null).map((r, y) => {
+      let cells = Array(this.state.width).fill(null).map((c, x) => {
+        let cell = this.state.boardState[x + this.state.width * y];
         return (
           <Cell key={cell.position}
                 cellState={cell}
@@ -267,19 +274,29 @@ class Grid extends Component {
     });
 
     return (
-      <div className="game-body">
-        <div className="status-body">
-          <div className="score status">{leftPad(this.state.availableFlags, 3)}</div>
-          <FaceButton gameState={this.state}
-                      onClick={() => this.resetClicked()} />
-          <div className="time status">{leftPad(this.state.time, 3)}</div>
+      <div className="ms-body">
+        <div className="menu-bar">
+          <select className="difficulty-selection"
+                  onChange={(e) => this.difficultySelect(e)}>
+            <option value="b">Basic</option>
+            <option value="i">Intermediate</option>
+            <option value="e">Expert</option>
+          </select>
         </div>
-        <div className="grid-body">
-          <table className="mine-table">
-            <tbody>
-              {rows}
-            </tbody>
-          </table>
+        <div className="game-body">
+          <div className="status-body">
+            <div className="score status">{leftPad(this.state.availableFlags, 3)}</div>
+            <FaceButton gameState={this.state}
+                        onClick={() => this.resetClicked()} />
+            <div className="time status">{leftPad(this.state.time, 3)}</div>
+          </div>
+          <div className="grid-body">
+            <table className="mine-table">
+              <tbody>
+                {rows}
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
     );

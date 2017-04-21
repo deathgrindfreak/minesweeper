@@ -6,12 +6,28 @@ body {
     margin-top: 10px;
 }
 
-.game-body {
+.menu-bar {
+    height: 25px;
+    background-color: #eee;
+}
+
+.difficulty-selection {
+    float: left;
+    margin: 5px 0 0 5px;
+    font-size: 1em;
+    background-color: #eee;
+    border: none;
+}
+
+.ms-body {
     background-color: #ccc;
     display: table;
     margin: 0 auto;
     text-align: center;
     font-family: helvetica, sans-serif;
+}
+
+.game-body {
     padding: 15px;
     border-top: 6px solid #eee;
     border-right: 6px solid #aaa;
