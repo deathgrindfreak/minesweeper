@@ -170,9 +170,13 @@ class Grid extends Component {
         return;
     }
 
+    // Copy the board
+    let state = this.state.boardState.slice();
+
     // Start the timer
-    if (this.state.timer === null) {
-      let timer = setInterval(() => {
+    let timer = this.state.timer;
+    if (timer === null) {
+      timer = setInterval(() => {
         this.setState((prevState, props) => {
           let t = prevState.time;
           return {time: (t < 999 ? t + 1 : t)};
@@ -180,9 +184,6 @@ class Grid extends Component {
       }, 1000);
       this.setState({timer: timer});
     }
-
-    // Copy the board
-    let state = this.state.boardState.slice();
 
     // If control was held, the user was placing a flag
     if (shiftKey) {
@@ -196,21 +197,20 @@ class Grid extends Component {
 
     // Set the state
     if (cell.isBomb)
-      state = this.endGame(state, cell);
+      state = this.endGame(state, timer, cell);
     else if (cell.winnerClicked())
-      state = this.winGame(state, cell);
+      state = this.winGame(state, timer, cell);
     else if (cell.isOpen)
       state = this.openCells(state, cell);
     this.setState({ boardState: state });
   }
 
-  winGame(state, cell) {
+  winGame(state, timer, cell) {
     // Stop the timer
-    let timer = this.state.timer;
     clearInterval(timer);
 
     // End the game
-    this.setState({gameWon: true});
+    state.gameWon = true;
 
     // Automatically set flags for unclicked and unflagged cells
     state.forEach((c) => {
@@ -221,13 +221,12 @@ class Grid extends Component {
     return state;
   }
 
-  endGame(state, cell) {
+  endGame(state, timer, cell) {
     // Stop the timer
-    let timer = this.state.timer;
     clearInterval(timer);
 
     // End the game
-    this.setState({gameOver: true});
+    state.gameOver = true;
 
     // Show all bombs
     state.map((c) => {
