@@ -196,21 +196,21 @@ class Grid extends Component {
     state[cell.position].clickCell();
 
     // Set the state
-    if (cell.isBomb)
+    if (cell.isBomb) {
       state = this.endGame(state, timer, cell);
-    else if (cell.winnerClicked())
+      this.setState({ gameOver: true });
+    } else if (cell.winnerClicked()) {
       state = this.winGame(state, timer, cell);
-    else if (cell.isOpen)
+      this.setState({ gameWon: true });
+    } else if (cell.isOpen) {
       state = this.openCells(state, cell);
+    }
     this.setState({ boardState: state });
   }
 
   winGame(state, timer, cell) {
     // Stop the timer
     clearInterval(timer);
-
-    // End the game
-    state.gameWon = true;
 
     // Automatically set flags for unclicked and unflagged cells
     state.forEach((c) => {
@@ -224,9 +224,6 @@ class Grid extends Component {
   endGame(state, timer, cell) {
     // Stop the timer
     clearInterval(timer);
-
-    // End the game
-    state.gameOver = true;
 
     // Show all bombs
     state.map((c) => {

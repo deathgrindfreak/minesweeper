@@ -4,6 +4,7 @@
   "private": true,
   "homepage": "http://deathgrindfreak.github.io/minesweeper",
   "dependencies": {
+    "pulp": "^11.0.0",
     "react": "^15.5.4",
     "react-dom": "^15.5.4"
   },
