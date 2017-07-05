@@ -131,6 +131,7 @@ body {
     border-right: 4px solid #aaa;
     border-bottom: 4px solid #aaa;
     border-left: 4px solid #eee;
+    user-select: none;
 }
 
 #hit-cell {
