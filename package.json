@@ -4,13 +4,13 @@
   "private": true,
   "homepage": "http://deathgrindfreak.github.io/minesweeper",
   "dependencies": {
-    "pulp": "^11.0.0",
-    "react": "^15.5.4",
-    "react-dom": "^15.5.4"
+    "pulp": "^15.0.0",
+    "react": "^16.13.1",
+    "react-dom": "^16.13.1"
   },
   "devDependencies": {
-    "gh-pages": "^0.12.0",
-    "react-scripts": "0.9.5"
+    "gh-pages": "^3.1.0",
+    "react-scripts": "^3.4.3"
   },
   "scripts": {
     "start": "react-scripts start",
@@ -19,5 +19,17 @@
     "eject": "react-scripts eject",
     "predeploy": "npm run build",
     "deploy": "gh-pages -d build"
+  },
+  "browserslist": {
+    "production": [
+      ">0.2%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
   }
 }
